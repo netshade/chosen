@@ -289,17 +289,21 @@ class Chosen extends AbstractChosen
   search_results_mouseout: (evt) ->
     this.result_clear_highlight() if $(evt.target).hasClass "active-result" or $(evt.target).parents('.active-result').first()
 
-  choice_build: (item) ->
-    choice = $('<li />', { class: "search-choice" }).html("<span>#{item.html}</span>")
+  add_result_element:(text, disabled = false, array_index = null) ->
+    choice = $('<li />', { class: "search-choice" }).html("<span>#{text}</span>")
 
-    if item.disabled
+    if disabled
       choice.addClass 'search-choice-disabled'
     else
-      close_link = $('<a />', { href: '#', class: 'search-choice-close',  rel: item.array_index })
+      close_link = $('<a />', { href: '#', class: 'search-choice-close' })
+      close_link.attr("rel", array_index) if array_index
       close_link.click (evt) => this.choice_destroy_link_click(evt)
       choice.append close_link
 
     @search_container.before  choice
+
+  choice_build: (item) ->
+    @add_result_element(item.html, item.disabled, item.array_index)
 
   choice_destroy_link_click: (evt) ->
     evt.preventDefault()
@@ -307,7 +311,8 @@ class Chosen extends AbstractChosen
     this.choice_destroy $(evt.target) unless @is_disabled
 
   choice_destroy: (link) ->
-    if this.result_deselect (link.attr "rel")
+    idx = link.attr 'rel'
+    if !idx? || this.result_deselect idx
       this.show_search_field_default()
 
       this.results_hide() if @is_multiple and this.choices_count() > 0 and @search_field.val().length < 1
