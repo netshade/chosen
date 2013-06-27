@@ -2,14 +2,22 @@ root = this
 $ = jQuery
 
 $.fn.extend({
-  chosen: (options) ->
+  chosen: (options, args...) ->
     # Do no harm and return as soon as possible for unsupported browsers, namely IE6 and IE7
     # Continue on if running IE document type but in compatibility mode
     return this unless AbstractChosen.browser_is_supported()
-    this.each((input_field) ->
-      $this = $ this
-      $this.data('chosen', new Chosen(this, options)) unless $this.hasClass "chzn-done"
-    )
+    if typeof(options) == 'object'
+      this.each((input_field) ->
+        $this = $ this
+        $this.data('chosen', new Chosen(this, options)) unless $this.hasClass "chzn-done"
+      )
+    else if typeof(options) == 'string'
+      this.each((input_field) ->
+        $this = $ this
+        if chosen = $this.data('chosen')
+          chosen[options] args...
+      )
+
 })
 
 class Chosen extends AbstractChosen
@@ -59,7 +67,7 @@ class Chosen extends AbstractChosen
     else
       @search_container = @container.find('div.chzn-search').first()
       @selected_item = @container.find('.chzn-single').first()
-    
+
     this.results_build()
     this.set_tab_index()
     this.set_label_behavior()
@@ -290,7 +298,7 @@ class Chosen extends AbstractChosen
       close_link = $('<a />', { href: '#', class: 'search-choice-close',  rel: item.array_index })
       close_link.click (evt) => this.choice_destroy_link_click(evt)
       choice.append close_link
-    
+
     @search_container.before  choice
 
   choice_destroy_link_click: (evt) ->
@@ -556,7 +564,7 @@ class Chosen extends AbstractChosen
         w = @f_width - 10
 
       @search_field.css({'width': w + 'px'})
-  
+
   generate_random_id: ->
     string = "sel" + this.generate_random_char() + this.generate_random_char() + this.generate_random_char()
     while $("#" + string).length > 0
