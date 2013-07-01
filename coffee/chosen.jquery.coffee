@@ -273,6 +273,15 @@ class Chosen extends AbstractChosen
 
     @results_showing = false
 
+  current_results: ->
+    choices = @search_container.parent().find(".search-choice")
+    $.map(choices, (v, i)=>
+      text = $(v).text()
+      option = null
+      if (idx = $(v).find("a").attr("rel"))?
+        option = @results_data[idx]
+      { text: text, option: option, idx: idx }
+    )
 
   set_tab_index: (el) ->
     if @form_field_jq.attr "tabindex"
