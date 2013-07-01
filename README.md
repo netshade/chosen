@@ -1,3 +1,14 @@
+# Fork Details
+
+This fork adds:
+
+* Collapsible groups
+* Decorator support ( programatically alter content as it's inserted into the result list )
+* Method call support ( `$("#select-box").chosen('method-name', arg1, arg2)` )
+* Arbitrary choice insertion
+* Event fired when no item matches the user's input when they hit enter
+
+
 # Chosen
 
 Chosen is a library for making long, unwieldy select boxes more user friendly.
