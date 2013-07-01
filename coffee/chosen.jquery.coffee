@@ -184,12 +184,31 @@ class Chosen extends AbstractChosen
         @search_field[0].readOnly = false
         @container.removeClass "chzn-container-single-nosearch"
 
-    content = ''
+    frag = $(document.createDocumentFragment())
     for data in @results_data
       if data.group
-        content += this.result_add_group data
+        element = $(this.result_add_group data)
+        if @options.clicking_on_groups_toggles_children? && @options.clicking_on_groups_toggles_children
+          element.css("cursor", "pointer")
+          element.bind("click", { group: data }, (e)=>
+            if e.data.group.expanded == null
+              e.data.group.expanded = false
+            else
+              e.data.group.expanded = !e.data.group.expanded
+            @winnow_results()
+          )
+        result = if @options.group_decorator?
+          @options.group_decorator.decorate(element, data)
+        else
+          element
+        frag.append(result)
       else if !data.empty
-        content += this.result_add_option data
+        element = $(this.result_add_option(data))
+        result = if @options.result_decorator?
+          @options.result_decorator.decorate(element, data)
+        else
+          element
+        frag.append(result)
         if data.selected and @is_multiple
           this.choice_build data
         else if data.selected and not @is_multiple
@@ -200,7 +219,7 @@ class Chosen extends AbstractChosen
     this.show_search_field_default()
     this.search_field_scale()
 
-    @search_results.html content
+    @search_results.empty().append(frag)
     @parsing = false
 
   result_add_group: (group) ->
