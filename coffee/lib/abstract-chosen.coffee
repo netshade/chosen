@@ -50,7 +50,7 @@ class AbstractChosen
       setTimeout (=> this.container_mousedown()), 50 unless @active_field
     else
       @activate_field() unless @active_field
-  
+
   input_blur: (evt) ->
     if not @mouse_on_container
       @active_field = false
@@ -95,7 +95,7 @@ class AbstractChosen
     @selected_option_count = 0
     for option in @form_field.options
       @selected_option_count += 1 if option.selected
-    
+
     return @selected_option_count
 
   choices_click: (evt) ->
@@ -115,7 +115,7 @@ class AbstractChosen
           this.results_search()
       when 13
         evt.preventDefault()
-        this.result_select(evt) if this.results_showing
+        this.result_select(evt)# if this.results_showing
       when 27
         this.results_hide() if @results_showing
         return true
@@ -127,7 +127,7 @@ class AbstractChosen
     new_id = this.generate_random_id()
     @form_field.id = new_id
     new_id
-  
+
   generate_random_char: ->
     chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     rand = Math.floor(Math.random() * chars.length)
@@ -136,7 +136,7 @@ class AbstractChosen
   container_width: ->
     return if @options.width? then @options.width else "#{@form_field.offsetWidth}px"
 
-  # class methods and variables ============================================================ 
+  # class methods and variables ============================================================
 
   @browser_is_supported: ->
     if window.navigator.appName == "Microsoft Internet Explorer"
