@@ -12,10 +12,12 @@ $.fn.extend({
         $this.data('chosen', new Chosen(this, options)) unless $this.hasClass "chzn-done"
       )
     else if typeof(options) == 'string'
-      this.each((input_field) ->
-        $this = $ this
+      $.map(this, (input_field) ->
+        $this = $ input_field
         if chosen = $this.data('chosen')
           chosen[options] args...
+        else
+          undefined
       )
 
 })
