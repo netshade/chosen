@@ -479,10 +479,12 @@ class Chosen extends AbstractChosen
     regex = new RegExp(regexAnchor + searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i')
     zregex = new RegExp(searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i')
 
+    groups = []
     for option in @results_data
       if not option.empty
         if option.group
-          $('#' + option.dom_id).css('display', 'none')
+          option.visible = 0
+          groups.push(option)
         else
           found = false
           result_id = option.dom_id
@@ -510,11 +512,28 @@ class Chosen extends AbstractChosen
 
             result.html(text)
             this.result_activate result, option
-
+            option.parent.visible += 1
             $("#" + @results_data[option.group_array_index].dom_id).css('display', 'list-item') if option.group_array_index?
           else
             this.result_clear_highlight() if @result_highlight and result_id is @result_highlight.attr 'id'
             this.result_deactivate result
+
+    for option in groups
+      el = $('#' + option.dom_id)
+      if option.visible > 0
+          el.css('display', 'list-item')
+      else
+          el.css('display', 'none')
+      hide = option.expanded == false
+      if @options.display_threshold?
+        if @options.display_threshold < option.visible && option.expanded == null
+          hide = true
+      if hide
+        el.nextUntil(".group-result").andSelf().addClass("chzn-collapsed")
+      else
+        el.nextUntil(".group-result").andSelf().removeClass("chzn-collapsed")
+      if @options.group_decorator?
+        @options.group_decorator.decorate(el, option)
 
     if results < 1 and searchText.length
       this.no_results searchText
