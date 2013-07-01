@@ -1198,6 +1198,8 @@
         }
         if (w > this.f_width - 10) {
           w = this.f_width - 10;
+        } else if (w === 25) {
+          w = this.f_width * 0.25;
         }
         return this.search_field.css({
           'width': w + 'px'
