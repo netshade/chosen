@@ -319,9 +319,24 @@ class Chosen extends AbstractChosen
   search_results_mouseout: (evt) ->
     this.result_clear_highlight() if $(evt.target).hasClass "active-result" or $(evt.target).parents('.active-result').first()
 
-  add_result_element:(text, disabled = false, array_index = null) ->
-    choice = $('<li />', { class: "search-choice" }).html("<span>#{text}</span>")
-
+  add_choice_element:(item, additional_html = null) ->
+    disabled = false
+    array_index = null
+    if typeof(item) == 'string'
+      text = item
+    else if typeof(item) == 'object' && item['text']
+      text = item.text
+      disabled = item.disabled
+      array_index = item.array_index
+    else
+      text = String(item)
+    elem = $("<span>#{text}</span>")
+    result = if @options.choice_decorator?
+      @options.choice_decorator.decorate(elem, item)
+    else
+      elem
+    choice = $('<li />', { class: "search-choice" }).append(result)
+    choice.append(additional_html) if additional_html
     if disabled
       choice.addClass 'search-choice-disabled'
     else
@@ -331,9 +346,10 @@ class Chosen extends AbstractChosen
       choice.append close_link
 
     @search_container.before  choice
+    choice
 
   choice_build: (item) ->
-    @add_result_element(item.html, item.disabled, item.array_index)
+    @add_choice_element(item)
 
   choice_destroy_link_click: (evt) ->
     evt.preventDefault()
@@ -343,11 +359,18 @@ class Chosen extends AbstractChosen
   choice_destroy: (link) ->
     idx = link.attr 'rel'
     if !idx? || this.result_deselect idx
+      parent = link.parents('li').first()
+      if !idx?
+        faux_object = {
+          data: parent.data()
+        }
+        @form_field_jq.trigger "change", {deselected: parent.data('chosen-value') || parent.text(), item: faux_object}
+
       this.show_search_field_default()
 
       this.results_hide() if @is_multiple and this.choices_count() > 0 and @search_field.val().length < 1
 
-      link.parents('li').first().remove()
+      parent.remove()
 
       this.search_field_scale()
 
@@ -402,9 +425,11 @@ class Chosen extends AbstractChosen
 
       @search_field.val ""
 
-      @form_field_jq.trigger "change", {'selected': @form_field.options[item.options_index].value} if @is_multiple || @form_field.selectedIndex != @current_selectedIndex
+      @form_field_jq.trigger "change", {'selected': @form_field.options[item.options_index].value, 'item': item} if @is_multiple || @form_field.selectedIndex != @current_selectedIndex
       @current_selectedIndex = @form_field.selectedIndex
       this.search_field_scale()
+    else
+      @form_field_jq.trigger "liszt:nomatch", @search_field.val()
 
   result_activate: (el, option) ->
     if option.disabled
@@ -432,7 +457,7 @@ class Chosen extends AbstractChosen
       this.result_clear_highlight()
       this.winnow_results()
 
-      @form_field_jq.trigger "change", {deselected: @form_field.options[result_data.options_index].value}
+      @form_field_jq.trigger "change", {deselected: @form_field.options[result_data.options_index].value, item: result_data}
       this.search_field_scale()
 
       return true
