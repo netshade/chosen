@@ -125,7 +125,6 @@ class Chosen extends AbstractChosen
         else if not @is_multiple and evt and (($(evt.target)[0] == @selected_item[0]) || $(evt.target).parents("a.chzn-single").length)
           evt.preventDefault()
           this.results_toggle()
-
         this.activate_field()
 
   container_mouseup: (evt) ->
@@ -641,6 +640,8 @@ class Chosen extends AbstractChosen
 
       if( w > @f_width-10 )
         w = @f_width - 10
+      else if w == 25
+        w = @f_width * 0.25
 
       @search_field.css({'width': w + 'px'})
 
