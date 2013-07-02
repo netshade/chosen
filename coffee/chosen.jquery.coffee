@@ -190,7 +190,7 @@ class Chosen extends AbstractChosen
         if @options.clicking_on_groups_toggles_children? && @options.clicking_on_groups_toggles_children
           element.css("cursor", "pointer")
           element.bind("click", { group: data }, (e)=>
-            if e.data.group.expanded == null
+            if e.data.group.expanded == null && !$(e.target).hasClass('chzn-collapsed')
               e.data.group.expanded = false
             else
               e.data.group.expanded = !e.data.group.expanded
