@@ -616,7 +616,7 @@
             element.bind("click", {
               group: data
             }, function(e) {
-              if (e.data.group.expanded === null) {
+              if (e.data.group.expanded === null && !$(e.target).hasClass('chzn-collapsed')) {
                 e.data.group.expanded = false;
               } else {
                 e.data.group.expanded = !e.data.group.expanded;
