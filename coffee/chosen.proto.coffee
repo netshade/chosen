@@ -1,6 +1,4 @@
-root = this
-
-class Chosen extends AbstractChosen
+class @Chosen extends AbstractChosen
 
   setup: ->
     @current_selectedIndex = @form_field.selectedIndex
@@ -13,23 +11,22 @@ class Chosen extends AbstractChosen
     super()
 
     # HTML Templates
-    @single_temp = new Template('<a href="javascript:void(0)" class="chzn-single chzn-default" tabindex="-1"><span>#{default}</span><div><b></b></div></a><div class="chzn-drop"><div class="chzn-search"><input type="text" autocomplete="off" /></div><ul class="chzn-results"></ul></div>')
+    @single_temp = new Template('<a class="chzn-single chzn-default" tabindex="-1"><span>#{default}</span><div><b></b></div></a><div class="chzn-drop"><div class="chzn-search"><input type="text" autocomplete="off" /></div><ul class="chzn-results"></ul></div>')
     @multi_temp = new Template('<ul class="chzn-choices"><li class="search-field"><input type="text" value="#{default}" class="default" autocomplete="off" style="width:25px;" /></li></ul><div class="chzn-drop"><ul class="chzn-results"></ul></div>')
     @no_results_temp = new Template('<li class="no-results">' + @results_none_found + ' "<span>#{terms}</span>"</li>')
 
   set_up_html: ->
-    @container_id = @form_field.identify().replace(/[^\w]/g, '_') + "_chzn"
-
     container_classes = ["chzn-container"]
     container_classes.push "chzn-container-" + (if @is_multiple then "multi" else "single")
     container_classes.push @form_field.className if @inherit_select_classes && @form_field.className
     container_classes.push "chzn-rtl" if @is_rtl
 
     container_props =
-      'id': @container_id
       'class': container_classes.join ' '
       'style': "width: #{this.container_width()};"
       'title': @form_field.title
+
+    container_props.id = @form_field.id.replace(/[^\w]/g, '_') + "_chzn" if @form_field.id.length
 
     @container = if @is_multiple then new Element('div', container_props).update( @multi_temp.evaluate({ "default": @default_text}) ) else new Element('div', container_props).update( @single_temp.evaluate({ "default":@default_text }) )
 
@@ -140,7 +137,7 @@ class Chosen extends AbstractChosen
     @search_field.focus()
 
   test_active_click: (evt) ->
-    if evt.target.up('#' + @container_id)
+    if evt.target.up('.chzn-container') is @container
       @active_field = true
     else
       this.close_field()
@@ -149,12 +146,12 @@ class Chosen extends AbstractChosen
     @parsing = true
     @selected_option_count = null
 
-    @results_data = root.SelectParser.select_to_array @form_field
+    @results_data = SelectParser.select_to_array @form_field
 
     if @is_multiple
       @search_choices.select("li.search-choice").invoke("remove")
     else if not @is_multiple
-      @selected_item.addClassName("chzn-default").down("span").update(@default_text)
+      this.single_set_selected_text()
       if @disable_search or @form_field.options.length <= @disable_search_threshold
         @search_field.readOnly = true
         @container.addClassName "chzn-container-single-nosearch"
@@ -162,28 +159,13 @@ class Chosen extends AbstractChosen
         @search_field.readOnly = false
         @container.removeClassName "chzn-container-single-nosearch"
 
-    content = ''
-    for data in @results_data
-      if data.group
-        content += this.result_add_group data
-      else if !data.empty
-        content += this.result_add_option data
-        if data.selected and @is_multiple
-          this.choice_build data
-        else if data.selected and not @is_multiple
-          @selected_item.removeClassName("chzn-default").down("span").update( data.html )
-          this.single_deselect_control_build() if @allow_single_deselect
+    this.update_results_content this.results_option_build({first:true})
 
     this.search_field_disabled()
     this.show_search_field_default()
     this.search_field_scale()
 
-    @search_results.update content
     @parsing = false
-
-  result_add_group: (group) ->
-    group.dom_id = @container_id + "_g_" + group.array_index
-    '<li id="' + group.dom_id + '" class="group-result">' + group.label.escapeHTML() + '</li>'
 
   result_do_highlight: (el) ->
       this.result_clear_highlight()
@@ -221,6 +203,9 @@ class Chosen extends AbstractChosen
     @search_field.value = @search_field.value
 
     this.winnow_results()
+
+  update_results_content: (content) ->
+    @search_results.update content
 
   results_hide: ->
     if @results_showing
@@ -298,8 +283,7 @@ class Chosen extends AbstractChosen
   results_reset: ->
     @form_field.options[0].selected = true
     @selected_option_count = null
-    @selected_item.down("span").update(@default_text)
-    @selected_item.addClassName("chzn-default") if not @is_multiple
+    this.single_set_selected_text()
     this.show_search_field_default()
     this.results_reset_cleanup()
     @form_field.simulate("change") if typeof Event.simulate is 'function'
@@ -322,14 +306,16 @@ class Chosen extends AbstractChosen
       if @is_multiple
         high.removeClassName("active-result")
       else
-        @search_results.descendants(".result-selected").invoke "removeClassName", "result-selected"
-        @selected_item.removeClassName("chzn-default")
+        if @result_single_selected
+          @result_single_selected.removeClassName("result-selected")
+          selected_index = @result_single_selected.getAttribute('data-option-array-index')
+          @results_data[selected_index].selected = false
+
         @result_single_selected = high
       
       high.addClassName("result-selected")
 
-      position = high.id.substr(high.id.lastIndexOf("_") + 1 )
-      item = @results_data[position]
+      item = @results_data[ high.getAttribute("data-option-array-index") ]
       item.selected = true
 
       @form_field.options[item.options_index].selected = true
@@ -338,8 +324,7 @@ class Chosen extends AbstractChosen
       if @is_multiple
         this.choice_build item
       else
-        @selected_item.down("span").update(item.html)
-        this.single_deselect_control_build() if @allow_single_deselect
+        this.single_set_selected_text(item.text)
 
       this.results_hide() unless (evt.metaKey or evt.ctrlKey) and @is_multiple
 
@@ -350,18 +335,14 @@ class Chosen extends AbstractChosen
 
       this.search_field_scale()
 
-  result_activate: (el, option) ->
-    if option.disabled
-      el.addClassName("disabled-result")
-    else if @is_multiple and option.selected
-      el.addClassName("result-selected")
+  single_set_selected_text: (text=@default_text) ->
+    if text is @default_text
+      @selected_item.addClassName("chzn-default")
     else
-      el.addClassName("active-result")
+      this.single_deselect_control_build()
+      @selected_item.removeClassName("chzn-default")
 
-  result_deactivate: (el) ->
-    el.removeClassName("active-result")
-    el.removeClassName("result-selected")
-    el.removeClassName("disabled-result")
+    @selected_item.down("span").update(text)
 
   result_deselect: (pos) ->
     result_data = @results_data[pos]
@@ -372,11 +353,8 @@ class Chosen extends AbstractChosen
       @form_field.options[result_data.options_index].selected = false
       @selected_option_count = null
 
-      result = $(@container_id + "_o_" + pos)
-      result.removeClassName("result-selected").addClassName("active-result").show()
-
       this.result_clear_highlight()
-      this.winnow_results()
+      this.winnow_results() if @results_showing
 
       @form_field.simulate("change") if typeof Event.simulate is 'function'
       this.search_field_scale()
@@ -389,68 +367,17 @@ class Chosen extends AbstractChosen
     @selected_item.down("span").insert { after: "<abbr class=\"search-choice-close\"></abbr>" } unless @selected_item.down("abbr")
     @selected_item.addClassName("chzn-single-with-deselect")
 
-  winnow_results: ->
-    this.no_results_clear()
-
-    results = 0
-
-    searchText = if @search_field.value is @default_text then "" else @search_field.value.strip().escapeHTML()
-    regexAnchor = if @search_contains then "" else "^"
-    regex = new RegExp(regexAnchor + searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i')
-    zregex = new RegExp(searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i')
-
-    for option in @results_data
-      if not option.empty
-        if option.group
-          $(option.dom_id).hide()
-        else
-          found = false
-          result_id = option.dom_id
-
-          if regex.test option.html
-            found = true
-            results += 1
-          else if @enable_split_word_search and (option.html.indexOf(" ") >= 0 or option.html.indexOf("[") == 0)
-            #TODO: replace this substitution of /\[\]/ with a list of characters to skip.
-            parts = option.html.replace(/\[|\]/g, "").split(" ")
-            if parts.length
-              for part in parts
-                if regex.test part
-                  found = true
-                  results += 1
-
-          if found
-            if searchText.length
-              startpos = option.html.search zregex
-              text = option.html.substr(0, startpos + searchText.length) + '</em>' + option.html.substr(startpos + searchText.length)
-              text = text.substr(0, startpos) + '<em>' + text.substr(startpos)
-            else
-              text = option.html
-
-            $(result_id).update text if $(result_id).innerHTML != text
-
-            this.result_activate $(result_id), option
-
-            $(@results_data[option.group_array_index].dom_id).setStyle({display: 'list-item'}) if option.group_array_index?
-          else
-            this.result_clear_highlight() if $(result_id) is @result_highlight
-            this.result_deactivate $(result_id)
-
-    if results < 1 and searchText.length
-      this.no_results(searchText)
-    else
-      this.winnow_results_set_highlight()
+  get_search_text: ->
+    if @search_field.value is @default_text then "" else @search_field.value.strip().escapeHTML()
 
   winnow_results_set_highlight: ->
-    if not @result_highlight
+    if not @is_multiple
+      do_high = @search_results.down(".result-selected.active-result")
 
-      if not @is_multiple
-        do_high = @search_results.down(".result-selected.active-result")
+    if not do_high?
+      do_high = @search_results.down(".active-result")
 
-      if not do_high?
-        do_high = @search_results.down(".active-result")
-
-      this.result_do_highlight do_high if do_high?
+    this.result_do_highlight do_high if do_high?
 
   no_results: (terms) ->
     @search_results.insert @no_results_temp.evaluate( terms: terms )
@@ -542,11 +469,9 @@ class Chosen extends AbstractChosen
       w = Element.measure(div, 'width') + 25
       div.remove()
 
-      @f_width = @container.getWidth() unless @f_width
+      f_width = @container.getWidth()
 
-      if( w > @f_width-10 )
-        w = @f_width - 10
+      if( w > f_width-10 )
+        w = f_width - 10
 
       @search_field.setStyle({'width': w + 'px'})
-
-root.Chosen = Chosen

@@ -15,7 +15,7 @@ class SelectParser
     object =
       array_index: group_position
       group: true
-      label: group.label
+      label: this.escapeExpression(group.label)
       children: 0
       visible: 0
       disabled: group.disabled
@@ -55,9 +55,22 @@ class SelectParser
       @options_index += 1
       object
 
+  escapeExpression: (text) ->
+    if not text? or text is false
+      return ""
+    unless /[\&\<\>\"\'\`]/.test(text)
+      return text
+    map =
+      "<": "&lt;"
+      ">": "&gt;"
+      '"': "&quot;"
+      "'": "&#x27;"
+      "`": "&#x60;"
+    unsafe_chars = /&(?!\w+;)|[\<\>\"\'\`]/g
+    text.replace unsafe_chars, (chr) ->
+      map[chr] || "&amp;"
+
 SelectParser.select_to_array = (select) ->
   parser = new SelectParser()
-  parser.add_node(child) for child in select.childNodes
+  parser.add_node( child ) for child in select.childNodes
   parser.parsed
-
-this.SelectParser = SelectParser
