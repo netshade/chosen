@@ -30,6 +30,8 @@ class AbstractChosen
     @single_backstroke_delete = if @options.single_backstroke_delete? then @options.single_backstroke_delete else true
     @max_selected_options = @options.max_selected_options || Infinity
     @inherit_select_classes = @options.inherit_select_classes || false
+    @display_selected_options = if @options.display_selected_options? then @options.display_selected_options else true
+    @display_disabled_options = if @options.display_disabled_options? then @options.display_disabled_options else true
 
   set_default_text: ->
     if @form_field.getAttribute("data-placeholder")
@@ -64,9 +66,9 @@ class AbstractChosen
             continue
           if data.parent.visible > 10 && !data.parent.expanded?
             continue
-      if data.group && (data.search_match || data.group_match)
+      if data.group
         content += this.result_add_group data
-      else if !data.empty && data.search_match
+      else
         content += this.result_add_option data
 
       # this select logic pins on an awkward flag
@@ -80,6 +82,9 @@ class AbstractChosen
     content
 
   result_add_option: (option) ->
+    return '' unless option.search_match
+    return '' unless this.include_option_in_results(option)
+
     classes = []
     classes.push "active-result" if !option.disabled and !(option.selected and @is_multiple)
     classes.push "disabled-result" if option.disabled and !(option.selected and @is_multiple)
@@ -98,6 +103,8 @@ class AbstractChosen
 
 
   result_add_group: (group) ->
+    return '' unless group.search_match || group.group_match
+    return '' unless group.active_options > 0
     styles = []
     classes = []
     if @options.clicking_on_groups_toggles_children? && @options.clicking_on_groups_toggles_children
@@ -136,23 +143,33 @@ class AbstractChosen
     results = 0
 
     searchText = this.get_search_text()
+    escapedSearchText = searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")
     regexAnchor = if @search_contains then "" else "^"
-    regex = new RegExp(regexAnchor + searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i')
-    zregex = new RegExp(searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i')
+    regex = new RegExp(regexAnchor + escapedSearchText, 'i')
+    zregex = new RegExp(escapedSearchText, 'i')
 
     groups = []
     for option in @results_data
-      if not option.empty
+      option.search_match = false
+      results_group = null
+
+      if this.include_option_in_results(option)
+
         if option.group
           option.group_match = false
+          option.active_options = 0
           option.visible = 0
 
+        if option.group_array_index? and @results_data[option.group_array_index]
+          results_group = @results_data[option.group_array_index]
+          results += 1 if results_group.active_options is 0 and results_group.search_match
+          results_group.active_options += 1
+
         unless option.group and not @group_search
-          option.search_match = false
 
           option.search_text = if option.group then option.label else option.html
           option.search_match = this.search_string_match(option.search_text, regex)
-          results += 1 if option.search_match
+          results += 1 if option.search_match and not option.group
 
           if option.search_match
             if searchText.length
@@ -160,16 +177,17 @@ class AbstractChosen
               text = option.search_text.substr(0, startpos + searchText.length) + '</em>' + option.search_text.substr(startpos + searchText.length)
               option.search_text = text.substr(0, startpos) + '<em>' + text.substr(startpos)
 
-            if option.group_array_index?
-              @results_data[option.group_array_index].group_match = true
-              @results_data[option.group_array_index].visible += 1
+            if results_group?
+              results_group.group_match = true
+              results_group.visible += 1
 
           else if option.group_array_index? and @results_data[option.group_array_index].search_match
             option.search_match = true
 
+    this.result_clear_highlight()
+
     if results < 1 and searchText.length
       this.update_results_content ""
-      this.result_clear_highlight()
       this.no_results searchText
     else
       this.update_results_content this.results_option_build()
@@ -222,6 +240,13 @@ class AbstractChosen
 
   container_width: ->
     return if @options.width? then @options.width else "#{@form_field.offsetWidth}px"
+
+  include_option_in_results: (option) ->
+    return false if @is_multiple and (not @display_selected_options and option.selected)
+    return false if not @display_disabled_options and option.disabled
+    return false if option.empty
+
+    return true
 
   # class methods and variables ============================================================
 
