@@ -316,12 +316,12 @@ class Chosen extends AbstractChosen
       array_index = item.array_index
     else
       text = String(item)
-    elem = $("<span>#{text}</span>")
-    result = if @options.choice_decorator?
-      @options.choice_decorator.decorate(elem, item)
+    text = if @options.choice_decorator?
+      @options.choice_decorator.decorate(item)
     else
-      elem
-    choice = $('<li />', { class: "search-choice" }).append(result)
+      text
+    elem = $("<span>#{text}</span>")
+    choice = $('<li />', { class: "search-choice" }).append(elem)
     choice.append(additional_html) if additional_html
     if disabled
       choice.addClass 'search-choice-disabled'
