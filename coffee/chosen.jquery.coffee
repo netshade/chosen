@@ -92,6 +92,17 @@ class Chosen extends AbstractChosen
     @search_field.keydown (evt) => this.keydown_checker(evt); return
     @search_field.focus (evt) => this.input_focus(evt); return
 
+    if @options.clicking_on_groups_toggles_children
+      $(".group-result").live("click", (e)=>
+        index = $(e.target).data("option-array-index")
+        if index?
+          option = @results_data[index]
+          if option? && option.group
+            option.expanded = !option.expanded
+            @winnow_results()
+            false
+      )
+
     if @is_multiple
       @search_choices.click (evt) => this.choices_click(evt); return
     else

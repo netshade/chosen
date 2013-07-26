@@ -58,6 +58,12 @@ class AbstractChosen
   results_option_build: (options) ->
     content = ''
     for data in @results_data
+      if @options.clicking_on_groups_toggles_children
+        if data.parent?
+          if data.parent.expanded == false
+            continue
+          if data.parent.visible > 10 && !data.parent.expanded?
+            continue
       if data.group && (data.search_match || data.group_match)
         content += this.result_add_group data
       else if !data.empty && data.search_match
@@ -83,22 +89,26 @@ class AbstractChosen
 
     style = if option.style.cssText != "" then " style=\"#{option.style}\"" else ""
 
-    element = """<li class="#{classes.join(' ')}"#{style} data-option-array-index="#{option.array_index}">#{option.search_text}</li>"""
-    if @options.result_decorator?
-      @options.result_decorator.decorate(element, option)
+    text = if @options.result_decorator?
+      @options.result_decorator.decorate(option)
     else
-      element
+      option.search_text
+
+    """<li class="#{classes.join(' ')}"#{style} data-option-array-index="#{option.array_index}">#{text}</li>"""
+
 
   result_add_group: (group) ->
     styles = []
+    classes = []
     if @options.clicking_on_groups_toggles_children? && @options.clicking_on_groups_toggles_children
       styles.push "cursor: pointer"
-    element = """<li class="group-result" style="#{styles.join(';')}">#{group.search_text}</li>"""
-    # TODO: Add group toggling?
-    if @options.group_decorator?
-      @options.group_decorator.decorate(element, group)
+    text = if @options.group_decorator?
+      @options.group_decorator.decorate(group)
     else
-      element
+      group.search_text
+    if group.expanded
+      classes.push("chzn-expanded")
+    """<li class="group-result #{classes.join(" ")}" data-option-array-index="#{group.array_index}" style="#{styles.join(';')}">#{text}</li>"""
 
   results_update_field: ->
     this.set_default_text()
@@ -133,7 +143,9 @@ class AbstractChosen
     groups = []
     for option in @results_data
       if not option.empty
-        option.group_match = false if option.group
+        if option.group
+          option.group_match = false
+          option.visible = 0
 
         unless option.group and not @group_search
           option.search_match = false
@@ -148,7 +160,9 @@ class AbstractChosen
               text = option.search_text.substr(0, startpos + searchText.length) + '</em>' + option.search_text.substr(startpos + searchText.length)
               option.search_text = text.substr(0, startpos) + '<em>' + text.substr(startpos)
 
-            @results_data[option.group_array_index].group_match = true if option.group_array_index?
+            if option.group_array_index?
+              @results_data[option.group_array_index].group_match = true
+              @results_data[option.group_array_index].visible += 1
 
           else if option.group_array_index? and @results_data[option.group_array_index].search_match
             option.search_match = true
