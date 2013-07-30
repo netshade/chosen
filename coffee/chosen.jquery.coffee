@@ -343,15 +343,13 @@ class Chosen extends AbstractChosen
 
   choice_destroy: (link) ->
     idx = link[0].getAttribute("data-option-array-index")
-
-    if !idx? || this.result_deselect( idx )
-      this.show_search_field_default()
-
-      this.results_hide() if @is_multiple and this.choices_count() > 0 and @search_field.val().length < 1
-
-      link.parents('li').first().remove()
-
-      this.search_field_scale()
+    this.result_deselect( idx ) if idx?
+    this.show_search_field_default()
+    this.results_hide() if @is_multiple and this.choices_count() > 0 and @search_field.val().length < 1
+    link.parents('li').first().remove()
+    this.search_field_scale()
+    if !idx? || idx == null
+      @form_field_jq.trigger "change", {'deselected': true, 'link': link.parents(".search-choice")}
 
   results_reset: ->
     @form_field.options[0].selected = true
