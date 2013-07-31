@@ -108,7 +108,12 @@ class AbstractChosen
     if text.indexOf("<") > -1
       li.innerHTML = text
     else
-      li.textContent = text
+      if li.textContent?
+        li.textContent = text
+      else
+        tn = document.createTextNode()
+        tn.nodeValue = text
+        li.appendChild(tn)
     li
 
 
@@ -132,7 +137,12 @@ class AbstractChosen
     if text.indexOf("<") > -1
       li.innerHTML = text
     else
-      li.textContent = text
+      if li.textContent?
+        li.textContent = text
+      else
+        tn = document.createTextNode()
+        tn.nodeValue = text
+        li.appendChild(tn)
     li
 
   results_update_field: ->

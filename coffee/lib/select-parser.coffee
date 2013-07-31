@@ -34,7 +34,7 @@ class SelectParser
           array_index: @parsed.length
           options_index: @options_index
           value: option.value
-          text: option.textContent
+          text: @textFromNode(option)
           selected: option.selected
           disabled: if group_disabled is true then group_disabled else option.disabled
           group_array_index: group_position
@@ -50,6 +50,15 @@ class SelectParser
       @parsed.push(object)
       @options_index += 1
       object
+
+  textFromNode:(node) ->
+    if node.textContent?
+      node.textContent
+    else
+      if node.childNodes.length == 1 && node.childNodes[0].nodeName == "#text"
+        node.childNodes[0].nodeValue
+      else
+        node.innerText
 
   escapeExpression: (text) ->
     if not text? or text is false
