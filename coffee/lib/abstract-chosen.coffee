@@ -247,7 +247,7 @@ class AbstractChosen
           this.keydown_backstroke()
         else if not @pending_backstroke
           this.result_clear_highlight()
-          this.results_search()
+          this.delayed_search()
       when 13
         evt.preventDefault()
         this.result_select(evt)# if this.results_showing
@@ -256,7 +256,17 @@ class AbstractChosen
         return true
       when 9, 38, 40, 16, 91, 17
         # don't do anything on these keys
-      else this.results_search()
+      else this.delayed_search()
+
+  delayed_search: ()=>
+    if @options.delay_search_on_input
+      clearTimeout(@search_timer)
+      @search_timer = setTimeout(()=>
+        @search_timer = null
+        @results_search()
+      , @options.search_delay || 100)
+    else
+      @results_search()
 
   container_width: ->
     return if @options.width? then @options.width else "#{@form_field.offsetWidth}px"
