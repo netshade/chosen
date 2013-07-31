@@ -20,7 +20,6 @@ class SelectParser
       visible: 0
       disabled: group.disabled
       expanded: null
-      data: $(group).data()
     @parsed.push object
     this.add_option( option, group_position, group.disabled ) for option in group.childNodes
     object
@@ -35,21 +34,18 @@ class SelectParser
           array_index: @parsed.length
           options_index: @options_index
           value: option.value
-          text: option.text
-          html: option.innerHTML
+          text: option.textContent
           selected: option.selected
           disabled: if group_disabled is true then group_disabled else option.disabled
           group_array_index: group_position
           classes: option.className
           style: option.style.cssText
-          data: $(option).data()
           parent: @parsed[group_position]
       else
         object =
           array_index: @parsed.length
           options_index: @options_index
           empty: true
-          data: $(option).data()
           parent: @parsed[group_position]
       @parsed.push(object)
       @options_index += 1

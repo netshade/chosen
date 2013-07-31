@@ -248,7 +248,8 @@ class Chosen extends AbstractChosen
     this.winnow_results()
 
   update_results_content: (content) ->
-    @search_results.html content
+    @search_results[0].innerHTML = ""
+    @search_results[0].appendChild(content)
 
   results_hide: ->
     if @results_showing

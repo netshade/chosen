@@ -58,18 +58,20 @@ class AbstractChosen
       setTimeout (=> this.blur_test()), 100
 
   results_option_build: (options) ->
-    content = ''
+    fragment = document.createDocumentFragment()
     for data in @results_data
       if @options.clicking_on_groups_toggles_children
         if data.parent?
           if data.parent.expanded == false
             continue
-          if data.parent.visible > 10 && !data.parent.expanded?
+          if data.parent.visible > 10 && !data.parent.expanded
             continue
-      if data.group
-        content += this.result_add_group data
+      element = if data.group
+        this.result_add_group(data)
       else
-        content += this.result_add_option data
+        this.result_add_option(data)
+      if element
+        fragment.appendChild(element)
 
       # this select logic pins on an awkward flag
       # we can make it better
@@ -79,11 +81,11 @@ class AbstractChosen
         else if data.selected and not @is_multiple
           this.single_set_selected_text(data.text)
 
-    content
+    fragment
 
   result_add_option: (option) ->
-    return '' unless option.search_match
-    return '' unless this.include_option_in_results(option)
+    return null unless option.search_match
+    return null unless this.include_option_in_results(option)
 
     classes = []
     classes.push "active-result" if !option.disabled and !(option.selected and @is_multiple)
@@ -99,12 +101,20 @@ class AbstractChosen
     else
       option.search_text
 
-    """<li class="#{classes.join(' ')}"#{style} data-option-array-index="#{option.array_index}">#{text}</li>"""
+    li = document.createElement("LI")
+    li.className = classes.join(" ")
+    li.setAttribute("style", style)
+    li.setAttribute("data-option-array-index", option.array_index)
+    if text.indexOf("<") > -1
+      li.innerHTML = text
+    else
+      li.textContent = text
+    li
 
 
   result_add_group: (group) ->
-    return '' unless group.search_match || group.group_match
-    return '' unless group.active_options > 0
+    return null unless group.search_match || group.group_match
+    return null unless group.active_options > 0
     styles = []
     classes = []
     if @options.clicking_on_groups_toggles_children? && @options.clicking_on_groups_toggles_children
@@ -115,7 +125,15 @@ class AbstractChosen
       group.search_text
     if group.expanded
       classes.push("chzn-expanded")
-    """<li class="group-result #{classes.join(" ")}" data-option-array-index="#{group.array_index}" style="#{styles.join(';')}">#{text}</li>"""
+    li = document.createElement("li")
+    li.className = "group-result " + classes.join(" ")
+    li.setAttribute("data-option-array-index", group.array_index)
+    li.setAttribute("style", styles.join(" "))
+    if text.indexOf("<") > -1
+      li.innerHTML = text
+    else
+      li.textContent = text
+    li
 
   results_update_field: ->
     this.set_default_text()
@@ -167,7 +185,7 @@ class AbstractChosen
 
         unless option.group and not @group_search
 
-          option.search_text = if option.group then option.label else option.html
+          option.search_text = if option.group then option.label else option.text
           option.search_match = this.search_string_match(option.search_text, regex)
           results += 1 if option.search_match and not option.group
 
@@ -181,13 +199,15 @@ class AbstractChosen
               results_group.group_match = true
               results_group.visible += 1
 
-          else if option.group_array_index? and @results_data[option.group_array_index].search_match
-            option.search_match = true
+          else if option.group_array_index?
+            cur_group = @results_data[option.group_array_index]
+            if cur_group.search_match && !@options.clicking_on_groups_toggles_children
+              option.search_match = true
 
     this.result_clear_highlight()
 
     if results < 1 and searchText.length
-      this.update_results_content ""
+      this.update_results_content document.createDocumentFragment()
       this.no_results searchText
     else
       this.update_results_content this.results_option_build()
