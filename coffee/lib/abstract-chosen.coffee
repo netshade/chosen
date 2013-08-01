@@ -94,7 +94,7 @@ class AbstractChosen
     classes.push "group-option" if option.group_array_index?
     classes.push option.classes if option.classes != ""
 
-    style = if option.style.cssText != "" then " style=\"#{option.style}\"" else ""
+    style = if option.style.cssText != "" then option.style.cssText else ""
 
     text = if @options.result_decorator?
       @options.result_decorator.decorate(option)
