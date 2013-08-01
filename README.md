@@ -7,6 +7,10 @@ This fork adds:
 * Method call support ( `$("#select-box").chosen('method-name', arg1, arg2)` )
 * Arbitrary choice insertion
 * Event fired when no item matches the user's input when they hit enter
+* Big performance improvements for large data sets by using direct DOM insertion via Document Fragments
+* Sliding window style dom tree building of result sets such that you never load all n-thousand dom nodes at click time, but rather load them at view time based on scroll position
+
+Note that this fork has moved fairly far from its original roots, so use at your own discretion. These improvements are mostly to support my own needs.
 
 
 # Chosen
