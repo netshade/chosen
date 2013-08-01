@@ -28,6 +28,7 @@ class Chosen extends AbstractChosen
     @form_field_jq = $ @form_field
     @current_selectedIndex = @form_field.selectedIndex
     @is_rtl = @form_field_jq.hasClass "chzn-rtl"
+    @candidates = []
 
   finish_setup: ->
     @form_field_jq.addClass "chzn-done"
@@ -83,6 +84,7 @@ class Chosen extends AbstractChosen
     @search_results.bind 'mouseover.chosen', (evt) => this.search_results_mouseover(evt); return
     @search_results.bind 'mouseout.chosen', (evt) => this.search_results_mouseout(evt); return
     @search_results.bind 'mousewheel.chosen DOMMouseScroll.chosen', (evt) => this.search_results_mousewheel(evt); return
+    @search_results.bind 'scroll.chosen', (evt) => this.search_results_scroll(evt); return
 
     @form_field_jq.bind "liszt:updated.chosen", (evt) => this.results_update_field(evt); return
     @form_field_jq.bind "liszt:activate.chosen", (evt) => this.activate_field(evt); return
@@ -155,6 +157,21 @@ class Chosen extends AbstractChosen
       delta = delta * 40 if evt.type is 'DOMMouseScroll'
       @search_results.scrollTop(delta + @search_results.scrollTop())
 
+  search_results_scroll: (evt) ->
+    search_offset = @search_results.offset()
+    height = @search_results.height()
+    last_element = $(@search_results[0].childNodes[@search_results[0].childNodes.length - 1])
+    if last_element.length == 1
+      offset_top = last_element.offset().top
+      if offset_top <= (search_offset.top + height)
+        idx = last_element.data("option-array-index")
+        if (option = @results_data[idx])
+          requestAnimationFrame(()=>
+            candidate_idx = @candidates.indexOf(option)
+            if candidate_idx > -1 && candidate_idx < @candidates.length
+              @append_results_content(@results_option_build(start: candidate_idx + 1, end: candidate_idx + @max_visible))
+          )
+
   blur_test: (evt) ->
     this.close_field() if not @active_field and @container.hasClass "chzn-container-active"
 
@@ -207,6 +224,8 @@ class Chosen extends AbstractChosen
     this.show_search_field_default()
     this.search_field_scale()
 
+    @candidates = @results_data
+
     @parsing = false
 
   result_do_highlight: (el) ->
@@ -249,6 +268,9 @@ class Chosen extends AbstractChosen
 
   update_results_content: (content) ->
     @search_results[0].innerHTML = ""
+    @append_results_content(content)
+
+  append_results_content: (content) ->
     @search_results[0].appendChild(content)
 
   results_hide: ->

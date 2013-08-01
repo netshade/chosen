@@ -32,6 +32,7 @@ class AbstractChosen
     @inherit_select_classes = @options.inherit_select_classes || false
     @display_selected_options = if @options.display_selected_options? then @options.display_selected_options else true
     @display_disabled_options = if @options.display_disabled_options? then @options.display_disabled_options else true
+    @max_visible = if @options.max_visible? then @options.max_visible else 500
 
   set_default_text: ->
     if @form_field.getAttribute("data-placeholder")
@@ -59,7 +60,11 @@ class AbstractChosen
 
   results_option_build: (options) ->
     fragment = document.createDocumentFragment()
-    for data in @results_data
+    start = options.start || 0
+    end = options.end || @candidates.length - 1
+    len = end - start
+    marker = 0
+    for data in @candidates[start..-1]
       if @options.clicking_on_groups_toggles_children
         if data.parent?
           if data.parent.expanded == false
@@ -72,6 +77,7 @@ class AbstractChosen
         this.result_add_option(data)
       if element
         fragment.appendChild(element)
+        marker += 1
 
       # this select logic pins on an awkward flag
       # we can make it better
@@ -80,6 +86,9 @@ class AbstractChosen
           this.choice_build data
         else if data.selected and not @is_multiple
           this.single_set_selected_text(data.text)
+
+      if marker >= len
+        break
 
     fragment
 
@@ -175,8 +184,10 @@ class AbstractChosen
     regexAnchor = if @search_contains then "" else "^"
     regex = new RegExp(regexAnchor + escapedSearchText, 'i')
     zregex = new RegExp(escapedSearchText, 'i')
+    show_until = @max_visible
 
     groups = []
+    @candidates = []
     for option in @results_data
       option.search_match = false
       results_group = null
@@ -197,9 +208,10 @@ class AbstractChosen
 
           option.search_text = if option.group then option.label else option.text
           option.search_match = this.search_string_match(option.search_text, regex)
-          results += 1 if option.search_match and not option.group
 
           if option.search_match
+            if not option.group
+              results += 1
             if searchText.length
               startpos = option.search_text.search zregex
               text = option.search_text.substr(0, startpos + searchText.length) + '</em>' + option.search_text.substr(startpos + searchText.length)
@@ -208,11 +220,16 @@ class AbstractChosen
             if results_group?
               results_group.group_match = true
               results_group.visible += 1
+              if @candidates.indexOf(results_group) == -1
+                @candidates.push(results_group)
+
+            @candidates.push(option)
 
           else if option.group_array_index?
             cur_group = @results_data[option.group_array_index]
             if cur_group.search_match && !@options.clicking_on_groups_toggles_children
               option.search_match = true
+              @candidates.push(option)
 
     this.result_clear_highlight()
 
@@ -220,7 +237,7 @@ class AbstractChosen
       this.update_results_content document.createDocumentFragment()
       this.no_results searchText
     else
-      this.update_results_content this.results_option_build()
+      this.update_results_content this.results_option_build(start: 0, end: show_until)
       this.winnow_results_set_highlight()
 
   search_string_match: (search_string, regex) ->
