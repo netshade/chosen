@@ -1,3 +1,18 @@
+
+# Some shims for browser compat
+window.requestAnimationFrame = window.requestAnimationFrame ||
+                                window.mozRequestAnimationFrame ||
+                                window.webkitRequestAnimationFrame ||
+                                window.msRequestAnimationFrame ||
+                                (cb)-> setTimeout(cb, 1000/60)
+
+Array.prototype.indexOf = Array.prototype.indexOf || (itm)->
+  for i in [0...this.length]
+    if itm == this[i]
+      return i
+  return -1
+
+
 class AbstractChosen
 
   constructor: (@form_field, @options={}) ->
