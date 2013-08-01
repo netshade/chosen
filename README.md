@@ -10,7 +10,7 @@ This fork adds:
 * Big performance improvements for large data sets by using direct DOM insertion via Document Fragments
 * Sliding window style dom tree building of result sets such that you never load all n-thousand dom nodes at click time, but rather load them at view time based on scroll position
 
-Note that this fork has moved fairly far from its original roots, so use at your own discretion. These improvements are mostly to support my own needs.
+Note that this fork has moved fairly far from its original roots, so use at your own discretion. These improvements are mostly to support my own needs. ( Also these changes are just for the jQuery version, no intent to support any Prototype port )
 
 
 # Chosen
