@@ -203,7 +203,7 @@ class AbstractChosen
     escapedSearchText = searchText.replace(/[-[\]{}()+?.,\\^$|#]/g, "\\$&")
                                   .replace(/\*/g, ".*?")
                                   .replace(/\s/g, ".*?$&")
-    regexAnchor = if @search_contains then "" else "^"
+    regexAnchor = if @search_contains then "" else "(^|\\b)"
     regex = new RegExp(regexAnchor + escapedSearchText, 'i')
     zregex = new RegExp(escapedSearchText, 'i')
     show_until = @max_visible
