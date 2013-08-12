@@ -78,7 +78,8 @@ class AbstractChosen
     marker = 0
     start = options.start || 0
     dataSource = if options?.first
-      @results_data
+      @results_data # We need to review all options on first run
+                    # in order to build selected list
     else
       @candidates[start..-1]
     end = options.end || dataSource.length - 1
@@ -199,7 +200,9 @@ class AbstractChosen
     results = 0
 
     searchText = this.get_search_text()
-    escapedSearchText = searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")
+    escapedSearchText = searchText.replace(/[-[\]{}()+?.,\\^$|#]/g, "\\$&")
+                                  .replace(/\*/g, ".*?")
+                                  .replace(/\s/g, ".*?$&")
     regexAnchor = if @search_contains then "" else "^"
     regex = new RegExp(regexAnchor + escapedSearchText, 'i')
     zregex = new RegExp(escapedSearchText, 'i')
@@ -232,9 +235,10 @@ class AbstractChosen
             if not option.group
               results += 1
             if searchText.length
-              startpos = option.search_text.search zregex
-              text = option.search_text.substr(0, startpos + searchText.length) + '</em>' + option.search_text.substr(startpos + searchText.length)
-              option.search_text = text.substr(0, startpos) + '<em>' + text.substr(startpos)
+              if (substring = option.search_text.match(zregex)[0])
+                startpos = option.search_text.indexOf(substring)
+                text = option.search_text.substr(0, startpos + substring.length) + '</em>' + option.search_text.substr(startpos + substring.length)
+                option.search_text = text.substr(0, startpos) + '<em>' + text.substr(startpos)
 
             if results_group?
               results_group.group_match = true
