@@ -75,11 +75,15 @@ class AbstractChosen
 
   results_option_build: (options) ->
     fragment = document.createDocumentFragment()
-    start = options.start || 0
-    end = options.end || @candidates.length - 1
-    len = end - start
     marker = 0
-    for data in @candidates[start..-1]
+    start = options.start || 0
+    dataSource = if options?.first
+      @results_data
+    else
+      @candidates[start..-1]
+    end = options.end || dataSource.length - 1
+    len = end - start
+    for data in dataSource
       if @options.clicking_on_groups_toggles_children
         if data.parent?
           if data.parent.expanded == false
